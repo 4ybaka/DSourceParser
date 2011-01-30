@@ -11,7 +11,7 @@ module SourceParser
 # TODO: Block: private {...}
 # TODO: Add parameters to draw.
 # TODO: import lib1, lib2,...;
-# TODO: method parser cannot parse type like that: immutable(string)[]
+# TODO: import lib1 : func1;
 
 # Gets index of close-char take in account nesting.
 # Example: { int foo(){return 1;} } <- index of this bracket will be returned.
@@ -168,23 +168,25 @@ def self.parse_variable(content, data)
     regexp = /\A((#{qualifiers_for_regexp})*)\s*(?!import)(((immutable\s*\(\s*[^)\s]+\s*\)(\[|\])*)|[^(\s]+))\s+([^;\s()]+)(\s*=\s*[^;]*\s*)?;/
 
     index = (content =~ regexp)
-    if (index)
-        qualifiers = $1
-        type = $4
-        name = $7
-
-        qualifiers, type = move_immutable_keyword(qualifiers, type)
-
-        variable = SPVariable.new(name, type, qualifiers, data.current_version)
-        if (data.current_type.nil?)
-            data.current_module.variables.push variable
-        elsif (data.current_type.instance_of?(SPClass))
-            data.current_type.variables.push variable
-        end
-        
-        index = content.index(';')
-        return content[index+1..-1]
+    unless (index)
+        return content
     end
+
+    qualifiers = $1
+    type = $4
+    name = $7
+
+    qualifiers, type = move_immutable_keyword(qualifiers, type)
+
+    variable = SPVariable.new(name, type, qualifiers, data.current_version)
+    if (data.current_type.nil?)
+        data.current_module.variables.push variable
+    elsif (data.current_type.instance_of?(SPClass))
+        data.current_type.variables.push variable
+    end
+    
+    index = content.index(';')
+    return content[index+1..-1]
     
     content
 end
@@ -193,17 +195,17 @@ end
 def self.parse_method(content, data)
     qualifiers_for_regexp = get_qualifiers_regexp
     qualifiers_without_immutable = (SourceParser::get_qualifiers - ['immutable']).join(' |') + ' '
-    method_regexp = /\A((#{qualifiers_for_regexp})*)(?!#{qualifiers_without_immutable})\s*(((immutable\s*\([^)]+\))|[^(\s]+))\s+([^\s]+)\s*\(([^{;]*)\)(in|out|body|\s)*(\{|;)/
+    method_regexp = /\A((#{qualifiers_for_regexp})*)(?!#{qualifiers_without_immutable})\s*(((immutable\s*\([^)]+\)(\[|\])*)|[^(\s]+))\s+([^\s]+)\s*\(([^{;]*)\)(in|out|body|\s)*(\{|;)/
     ctor_regexp = /\A((#{qualifiers_for_regexp})*)\s*(~?this)\s*\(([^{]*)\)(in|out|body|\s)*({|;)/
 
     # Try parse simple methods.
     index = (content =~ method_regexp)
     if (index)
         qualifiers = $1
-        return_type = $3
-        method_name = $6
-        args = $7
-        last_symbol = $9
+        return_type = $4
+        method_name = $7
+        args = $8
+        last_symbol = $10
     else
         # Try parse constructors.
         index = (content =~ ctor_regexp)
