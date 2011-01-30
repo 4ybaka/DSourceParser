@@ -11,6 +11,7 @@ module SourceParser
 # TODO: Block: private {...}
 # TODO: Add parameters to draw.
 # TODO: import lib1, lib2,...;
+# TODO: method parser cannot parse type like that: immutable(string)[]
 
 # Gets index of close-char take in account nesting.
 # Example: { int foo(){return 1;} } <- index of this bracket will be returned.
@@ -175,13 +176,13 @@ end
 # Parses variable declaration.
 def self.parse_variable(content, data)
     qualifiers_for_regexp = get_qualifiers_regexp
-    regexp = /\A((#{qualifiers_for_regexp})*)\s*(?!import)(((immutable\s*\(\s*[^)\s]+\s*\))|[^(\s]+))\s+([^;\s()]+)(\s*=\s*[^;]*\s*)?;/
+    regexp = /\A((#{qualifiers_for_regexp})*)\s*(?!import)(((immutable\s*\(\s*[^)\s]+\s*\)(\[|\])*)|[^(\s]+))\s+([^;\s()]+)(\s*=\s*[^;]*\s*)?;/
 
     index = (content =~ regexp)
     if (index)
         qualifiers = $1
-        type = $3
-        name = $6
+        type = $4
+        name = $7
 
         qualifiers, type = move_immutable_keyword(qualifiers, type)
 
@@ -201,9 +202,6 @@ end
 
 # Parses method declaration.
 def self.parse_method(content, data)
-# TODO: method and variable parses cannot parse type like that: immutable(string)[]
-# How I understand it is equals to immutable string[]
-
     qualifiers_for_regexp = get_qualifiers_regexp
     qualifiers_without_immutable = (SourceParser::get_qualifiers - ['immutable']).join(' |') + ' '
     method_regexp = /\A((#{qualifiers_for_regexp})*)(?!#{qualifiers_without_immutable})\s*(((immutable\s*\([^)]+\))|[^(\s]+))\s+([^\s]+)\s*\(([^{;]*)\)(in|out|body|\s)*(\{|;)/
