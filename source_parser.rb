@@ -29,15 +29,6 @@ def self.find_index_of_close(open_char, close_char, content)
     index - 1
 end
 
-# Checks if @content begins from @text.
-def self.begins_with(content, text)
-# TODO: Remove these method and replace with regexp.
-    if (content.strip[0, text.length] == text)
-        return true
-    end
-    false
-end
-
 # Moves 'immutable' from qualifiers to type.
 def self.move_immutable_keyword(qualifiers, type)
     if (qualifiers =~ /immutable/)
@@ -55,11 +46,11 @@ end
 
 # Parses // and /* comments.
 def self.parse_comment(content, data)
-    if (begins_with(content, '/*'))
+    if (content =~ /\A\s*\/\*/)
         index = content.index('*/')
         return content[index+2..-1]
     end
-    if (begins_with(content, '//'))
+    if (content =~ /\A\s*\/\//)
         index = content.index("\n")
         if (index.nil?)
             return ''
@@ -152,14 +143,11 @@ end
 
 # Parses "module" keyword.
 def self.parse_module(content, data)
-    text = 'module'
-    unless (begins_with(content, text))
+    unless (content =~/\A\s*module\s+([^;]+);/)
         return content
     end
     
-    index = content.index(';')
-    module_name = content[text.length+1..index-1]
-    
+    module_name = $1
     module_index = data.modules.index {|x| x.name == module_name}
     
     unless (module_index.nil?)
@@ -169,7 +157,8 @@ def self.parse_module(content, data)
         data.modules.push new_module
         data.current_module = new_module
     end
-    
+
+    index = content.index(';')    
     content[index+1..-1]
 end
 
