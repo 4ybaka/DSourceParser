@@ -79,6 +79,18 @@ module GraphvizUML
         }
         graph
 	end
+    
+    # Adds union to the graph.
+	def self.add_union(graph, union)
+        scope = get_scope union.qualifiers
+		version = get_version union.version
+        
+        graph += "#{union.name} [ \nlabel = \"{#{scope}union #{union.name}#{version}|"
+		union.variables.each { |u|
+            graph = add_variable(graph, u.name, u.qualifiers, u.type, u.version)
+        }
+        close_element graph
+	end
 
     # Adds function to currently openned element.
 	def self.add_function(graph, name, qualifiers, return_type, args, version)

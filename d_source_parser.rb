@@ -7,11 +7,11 @@ module DSourceParser
 
 # TODO: Create map to replace "alised" types.
 # TODO: extern(C) int method(..)
-# TODO: union
 # TODO: Block: private {...}
 # TODO: Add parameters to draw.
 # TODO: import lib1, lib2,...;
 # TODO: import lib1 : func1;
+# TODO: Move all args for drawing to graphviz.
 
 # Gets index of close-char take in account nesting.
 # Example: { int foo(){return 1;} } <- index of this bracket will be returned.
@@ -181,7 +181,7 @@ def self.parse_variable(content, data)
     variable = SPVariable.new(name, type, qualifiers, data.current_version)
     if (data.current_type.nil?)
         data.current_module.variables.push variable
-    elsif (data.current_type.instance_of?(SPClass))
+    else
         data.current_type.variables.push variable
     end
     
@@ -247,6 +247,48 @@ def self.parse_method(content, data)
     content
 end
 
+# Parses union declaration.
+def self.parse_union(content, data)
+    qualifiers_for_regexp = get_qualifiers_regexp
+    
+    index = (content =~ /\A((#{qualifiers_for_regexp})*)\s*union\s+([^{:\s]+)\s*{/)
+    unless (index)
+        return content
+    end
+    
+    qualifiers = $1
+    name = $3
+    
+    new_union = SPUnion.new(name, data.current_module, qualifiers, data.current_version)
+    prev_type = data.current_type
+    data.current_type = new_union
+    
+    # Get union content and then parse it.
+    begin_index = content.index('{') + 1
+    end_index = find_index_of_close('{', '}', content[begin_index..-1])
+    end_index += begin_index - 1
+    
+    values = []
+    union_content = content[begin_index..end_index]
+    while (union_content != '')
+        prev_content = union_content
+        union_content = parse_comment(union_content, data)
+        union_content.strip!
+        
+        union_content = parse_variable(union_content, data)
+        if (union_content == prev_content)
+            index = union_content.index("\n")
+            puts "Cannot parse line for union: #{union_content[0..(index.nil? ? -1 : index)]}"
+            union_content = (index.nil? ? '' : union_content[index+1..-1])
+        end
+    end
+    
+    data.current_type = prev_type
+    data.current_module.types.push new_union
+
+    content[end_index+2..-1]
+end
+
 # Parses enum declaration.
 def self.parse_enum(content, data)
     qualifiers_for_regexp = get_qualifiers_regexp
@@ -260,7 +302,7 @@ def self.parse_enum(content, data)
     name = $3
     base_type = $5
     
-    # Get class content and then parse it.
+    # Get enum content and then parse it.
     begin_index = content.index('{') + 1
     end_index = find_index_of_close('{', '}', content[begin_index..-1])
     end_index += begin_index - 1
@@ -331,7 +373,8 @@ def self.parse(content, data)
     methods = [lambda { parse_comment(content, data) }, lambda { parse_version(content, data) },
         lambda { parse_extern(content, data) }, lambda { parse_alias(content, data) },
         lambda { parse_module(content, data) }, lambda { parse_import(content, data) }, 
-        lambda { parse_class(content, data) }, lambda { parse_enum(content, data) },
+        lambda { parse_class(content, data) }, 
+        lambda { parse_enum(content, data) }, lambda { parse_union(content, data) },
         lambda { parse_method(content, data) }, lambda { parse_variable(content, data) }]
 
     while (content != '')
@@ -420,6 +463,8 @@ def self.draw_types(graph, data)
                 graph = GraphvizUML::add_separator(graph)
                 graph = draw_methods(graph, t.methods)
                 graph = GraphvizUML::close_element(graph)
+            elsif (t.instance_of?(SPUnion))
+                graph = GraphvizUML::add_union(graph, t)
             end
         end
         graph = GraphvizUML::close_package(graph)

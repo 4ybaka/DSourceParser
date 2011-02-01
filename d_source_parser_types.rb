@@ -80,6 +80,17 @@ class SPEnum < SPType
     end
 end
 
+class SPUnion < SPType
+    attr_accessor :variables, :qualifiers
+    
+    def initialize(name, declared_module, qualifiers, version)
+        super(name, declared_module, version)
+        
+        @variables = []
+        @qualifiers = DSourceParser::remove_spaces qualifiers
+    end
+end
+
 class SPModule
     attr_accessor :name, :methods, :variables, :types, :imports, :aliases
     
