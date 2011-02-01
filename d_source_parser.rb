@@ -1,9 +1,9 @@
 #!/usr/bin/env ruby
 
 require File.expand_path('../graphviz', __FILE__)
-require File.expand_path('../source_parser_types', __FILE__)
+require File.expand_path('../d_source_parser_types', __FILE__)
 
-module SourceParser
+module DSourceParser
 
 # TODO: Create map to replace "alised" types.
 # TODO: extern(C) int method(..)
@@ -40,7 +40,7 @@ end
 
 # Gets qualifiers prepeared for alternative block in regualar expression.
 def self.get_qualifiers_regexp()
-    qualifiers = SourceParser::get_qualifiers
+    qualifiers = DSourceParser::get_qualifiers
     qualifiers.join(' |') + ' '
 end
 
@@ -194,7 +194,7 @@ end
 # Parses method declaration.
 def self.parse_method(content, data)
     qualifiers_for_regexp = get_qualifiers_regexp
-    qualifiers_without_immutable = (SourceParser::get_qualifiers - ['immutable']).join(' |') + ' '
+    qualifiers_without_immutable = (DSourceParser::get_qualifiers - ['immutable']).join(' |') + ' '
     method_regexp = /\A((#{qualifiers_for_regexp})*)(?!#{qualifiers_without_immutable})\s*(((immutable\s*\([^)]+\)(\[|\])*)|[^(\s]+))\s+([^\s]+)\s*\(([^{;]*)\)(in|out|body|\s)*(\{|;)/
     ctor_regexp = /\A((#{qualifiers_for_regexp})*)\s*(~?this)\s*\(([^{]*)\)(in|out|body|\s)*({|;)/
 
