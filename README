@@ -2,8 +2,8 @@ DSourceParser is package of ruby scripts to parse and visualize code in UML-like
 For more information see http://4ybaka.blogspot.com/p/my-projects.html (Russian)
 
 Usage:
-Parse file main.d and all files in ./src:
-source_parser.rb ./main.d ./src
+Parse file main.d and all files in ./src. Draw only inheritance relationships and aliases:
+source_parser.rb -f./main.d,./src -dia
 
 
 Author: Dmitriy Nesterov (4ybaka at gmail dot com)

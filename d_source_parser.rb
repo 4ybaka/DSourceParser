@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'optparse'
 require File.expand_path('../graphviz', __FILE__)
 require File.expand_path('../d_source_parser_types', __FILE__)
 
@@ -8,7 +9,6 @@ module DSourceParser
 # TODO: Create map to replace "alised" types.
 # TODO: extern(C) int method(..)
 # TODO: Block: private {...}
-# TODO: Add parameters to draw.
 # TODO: import lib1, lib2,...;
 # TODO: import lib1 : func1;
 
@@ -412,11 +412,11 @@ def self.parse_file(file_name, data)
 end
 
 # Draws defined types.
-def self.draw_types(graph, data)
+def self.draw_types(graph, data, draw_options)
     data.modules.each do |m|
         graph = GraphvizUML::open_package(graph, m.name)
         
-        if (m.aliases.length > 0)
+        if (m.aliases.length > 0 && (draw_options == '*' || draw_options.index('a')))
             graph = GraphvizUML::open_element(graph, "alias__#{m.name}", "alias__#{m.name}")
             graph = GraphvizUML::add_separator(graph)
             m.aliases.each do |a|
@@ -426,7 +426,7 @@ def self.draw_types(graph, data)
         end
         
         # Draw module's methods and variables.
-        if (m.variables.length > 0 || m.methods.length > 0)
+        if ((m.variables.length > 0 || m.methods.length > 0) && (draw_options == '*' || draw_options.index('m')))
             graph = GraphvizUML::open_element(graph, "module__#{m.name}", "module__#{m.name}")
             graph = GraphvizUML::add_separator(graph)
             graph = GraphvizUML::add_variables(graph, m.variables)
@@ -451,46 +451,52 @@ def self.draw_types(graph, data)
 end
 
 # Draws relationships between defined types.
-def self.draw_relationship_tree(graph, data)
+def self.draw_relationship_tree(graph, data, draw_options)
     types = data.get_all_types
-    graph = GraphvizUML::set_inheritance_arrow_mode graph
-    types.each do |t|
-        if (t.instance_of?(SPClass))
-            t.base_types.each do |b|
-                if(types.index {|x|x.name == b})
-                    graph = GraphvizUML::add_base_type(graph, t.name, b)
+    if (draw_options == '*' || draw_options.index('i'))
+        graph = GraphvizUML::set_inheritance_arrow_mode graph
+        types.each do |t|
+            if (t.instance_of?(SPClass))
+                t.base_types.each do |b|
+                    if(types.index {|x|x.name == b})
+                        graph = GraphvizUML::add_base_type(graph, t.name, b)
+                    end
                 end
             end
         end
     end
     
-    graph = GraphvizUML::set_composition_arrow_mode graph
-    composition_map = []
-    types.each do |t|
-        if (t.instance_of?(SPClass))
-            t.variables.each do |v|
-                index = types.index {|x|v.type =~ /\A(immutable|\()*\s*#{x.name}(\[|\]|\)|\*)*\z/}
-                if (index && !composition_map.index{|item| item[0] == t.name && item[1] == types[index].name})
-                    composition_map.push [t.name, types[index].name]
+    if (draw_options == '*' || draw_options.index('c'))
+        graph = GraphvizUML::set_composition_arrow_mode graph
+        composition_map = []
+        types.each do |t|
+            if (t.instance_of?(SPClass))
+                t.variables.each do |v|
+                    index = types.index {|x|v.type =~ /\A(immutable|\()*\s*#{x.name}(\[|\]|\)|\*)*\z/}
+                    if (index && !composition_map.index{|item| item[0] == t.name && item[1] == types[index].name})
+                        composition_map.push [t.name, types[index].name]
+                    end
                 end
             end
         end
-    end
-    composition_map.each do |item|
-        graph = GraphvizUML::add_composition(graph, item[0], item[1])
+        composition_map.each do |item|
+            graph = GraphvizUML::add_composition(graph, item[0], item[1])
+        end
     end
     
     graph
 end
 
-def self.main(files)
-    image_file = File.join(Dir.pwd, 'graph.png')
-    graph_file = File.join(Dir.pwd, 'graph.out')
+def self.main(files, draw_options)
+    start_dir = Dir.pwd
+    image_file = File.join(start_dir, 'graph.png')
+    graph_file = File.join(start_dir, 'graph.out')
 
     # Specified files add without changes.
     # Specified directories scan for .d files recursively.
     new_files = []
     files.each do |f|
+        Dir.chdir start_dir
         if (File.directory? f)
             Dir.chdir f
             found_files = Dir.glob(File.join('**', "*.d"))
@@ -522,8 +528,8 @@ def self.main(files)
 
     graph = GraphvizUML::init_graph
     
-    graph = draw_types(graph, data)
-    graph = draw_relationship_tree(graph, data)
+    graph = draw_types(graph, data, draw_options)
+    graph = draw_relationship_tree(graph, data, draw_options)
 
     File.open(graph_file, 'w') do |file|
         file.puts "#{graph} }"
@@ -531,6 +537,19 @@ def self.main(files)
     system("dot -Tpng #{graph_file} -o #{image_file}")
 end
 
-main ARGV
+options = Hash[:d, '*']
+OptionParser.new do |opts|
+    opts.banner = 'Usage: d_source_parser.rb -d[draw options] -f[files]'
+    
+    opts.on('-d', '--draw [options]', 'Options: [c]omposition, [i]nheritance, [a]liases, [m]odule\'s data.') do |d|
+        options[:d] = d
+    end
+
+    opts.on('-f', '--files file1,dir1', Array, 'Files to parse.') do |f|
+        options[:f] = f
+    end
+end.parse!
+
+main(options[:f], options[:d])
     
 end
