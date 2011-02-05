@@ -9,8 +9,6 @@ module DSourceParser
 # TODO: Create map to replace "alised" types.
 # TODO: extern(C) int method(..)
 # TODO: Block: private {...}
-# TODO: import lib1, lib2,...;
-# TODO: import lib1 : func1;
 
 # Gets index of close-char take in account nesting.
 # Example: { int foo(){return 1;} } <- index of this bracket will be returned.
@@ -125,12 +123,17 @@ end
 
 # Parses "import" keyword.
 def self.parse_import(content, data)
-    unless (content =~ /\A\s*(public|private)?\s*import\s+([^\s;:]+)\s*(:\s*[^;]+)?;/)
+    unless (content =~ /\A\s*(public|private)?\s*import\s+([^;:]+)\s*(:\s*[^;]+)?;/)
         return content
     end
     
     index = content.index(';')
-    import_name = $2
+    import_name = $2.strip
+    functions = $3
+    
+    if (functions)
+        import_name = import_name + functions.split.join(' ')
+    end
     
     if (data.current_module.nil?)
         puts "Current module not specified. Couldn't write import of #{import_name}"
@@ -549,6 +552,11 @@ OptionParser.new do |opts|
         options[:f] = f
     end
 end.parse!
+
+unless (options[:f])
+    puts 'Files to parse not specified.'
+    exit
+end
 
 main(options[:f], options[:d])
     
