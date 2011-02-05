@@ -11,7 +11,6 @@ module DSourceParser
 # TODO: Add parameters to draw.
 # TODO: import lib1, lib2,...;
 # TODO: import lib1 : func1;
-# TODO: Move all args for drawing to graphviz.
 
 # Gets index of close-char take in account nesting.
 # Example: { int foo(){return 1;} } <- index of this bracket will be returned.
@@ -412,27 +411,13 @@ def self.parse_file(file_name, data)
     data.current_module = data.modules[index]
 end
 
-def self.draw_methods(graph, methods)
-    methods.each do |x|
-        graph = GraphvizUML::add_function(graph, x.name, x.qualifiers, x.return_type, x.arguments, x.version)
-    end
-    graph
-end
-
-def self.draw_variables(graph, variables)
-    variables.each do |v|
-        graph = GraphvizUML::add_variable(graph, v.name, v.qualifiers, v.type, v.version)
-    end
-    graph
-end
-
 # Draws defined types.
 def self.draw_types(graph, data)
     data.modules.each do |m|
         graph = GraphvizUML::open_package(graph, m.name)
         
         if (m.aliases.length > 0)
-            graph = GraphvizUML::open_class(graph, "alias__#{m.name}", '', '', '')
+            graph = GraphvizUML::open_element(graph, "alias__#{m.name}", "alias__#{m.name}")
             graph = GraphvizUML::add_separator(graph)
             m.aliases.each do |a|
                 graph = GraphvizUML::add_string(graph, "#{a.qualifiers} #{a.name} #{a.type}")
@@ -442,27 +427,20 @@ def self.draw_types(graph, data)
         
         # Draw module's methods and variables.
         if (m.variables.length > 0 || m.methods.length > 0)
-            graph = GraphvizUML::open_class(graph, "module__#{m.name}", '', '', '')
+            graph = GraphvizUML::open_element(graph, "module__#{m.name}", "module__#{m.name}")
             graph = GraphvizUML::add_separator(graph)
-            graph = draw_variables(graph, m.variables)
+            graph = GraphvizUML::add_variables(graph, m.variables)
             graph = GraphvizUML::add_separator(graph)
-            graph = draw_methods(graph, m.methods)
+            graph = GraphvizUML::add_functions(graph, m.methods)
             graph = GraphvizUML::close_element(graph)
         end
         
         # Draws each type.
         m.types.each do |t|
             if (t.instance_of?(SPEnum))
-                graph = GraphvizUML::open_enum(graph, t.name, t.qualifiers, t.values, t.version)
-                graph = GraphvizUML::close_element(graph)
+                graph = GraphvizUML::add_enum(graph, t)
             elsif (t.instance_of?(SPClass))
-                base_types = t.base_types.join(',')
-                graph = GraphvizUML::open_class(graph, t.name, t.qualifiers, base_types, t.version)
-                graph = GraphvizUML::add_separator(graph)
-                graph = draw_variables(graph, t.variables)
-                graph = GraphvizUML::add_separator(graph)
-                graph = draw_methods(graph, t.methods)
-                graph = GraphvizUML::close_element(graph)
+                graph = GraphvizUML::add_class(graph, t)
             elsif (t.instance_of?(SPUnion))
                 graph = GraphvizUML::add_union(graph, t)
             end
