@@ -154,6 +154,8 @@ module GraphvizUML
     end
 
 	def self.get_scope(scope)
+        return '' unless scope
+        
         result =
             if (scope.index 'private')
                 '-'

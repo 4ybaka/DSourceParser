@@ -8,9 +8,9 @@ module DSourceParser
 
 # TODO: Create map to replace "alised" types.
 # TODO: extern(C) int method(..)
-# TODO: Block: private {...}
 # TODO: Process parsed extern keyword content.
 # TODO: Parse qualifiers only in class content.
+# TODO: alias maybe be declared inside class defenition.
 
 # Concatenates 2 strings that maybe nil.
 def self.concat_strings(str1, str2)
@@ -98,16 +98,30 @@ end
 # Parse qualifiers.
 def self.parse_qualifiers(content, data)
     qualifiers = 'private|protected|public|package|static'
-    index = (content =~ /\A\s*(#{qualifiers})+\s*:/)
+    index = (content =~ /\A\s*(#{qualifiers})+\s*(:|{)/)
     unless (index)
         return content
     end
 
     qualifiers = $1
-    data.context.qualifiers = qualifiers
 
-    index = content.index(':')
-    return content[index+1..-1]
+    if ($2 == ':')
+        data.context.qualifiers = qualifiers
+        index = content.index(':')
+        return content[index+1..-1]        
+    end
+
+    prev_qualifiers = data.context.qualifiers
+    data.context.qualifiers = qualifiers
+    
+    begin_index = content.index('{') + 1
+    end_index = find_index_of_close('{', '}', content[begin_index..-1])
+    end_index += begin_index - 1
+
+    parse(content[begin_index..end_index], data)
+    data.context.qualifiers = prev_qualifiers
+    
+    content[end_index+2..-1]
 end
 
 # Parses version keyword.
@@ -182,6 +196,7 @@ def self.parse_module(content, data)
         data.modules.push new_module
         data.context.module = new_module
     end
+    data.context.qualifiers = ''
 
     index = content.index(';')    
     content[index+1..-1]
