@@ -82,7 +82,7 @@ def self.parse_alias(content, data)
         return content
     end
     
-    data.current_module.aliases.push SPVariable.new($2, $3, $1, data.current_version)
+    data.context.module.aliases.push SPVariable.new($2, $3, $1, data.context.version)
     index = content.index(';')
     content[index+1..-1]
 end
@@ -95,8 +95,8 @@ def self.parse_version(content, data)
     end
     name = $2
 
-    prev_version = data.current_version
-    data.current_version = name
+    prev_version = data.context.version
+    data.context.version = name
     
     begin_index = content.index('{') + 1
     end_index = find_index_of_close('{', '}', content[begin_index..-1])
@@ -107,7 +107,7 @@ def self.parse_version(content, data)
     content = content[end_index+2..-1]
     
     if (content =~ /\A\s*else\s*{/)
-        data.current_version = "!#{name}"
+        data.context.version = "!#{name}"
         
         begin_index = content.index('{') + 1
         end_index = find_index_of_close('{', '}', content[begin_index..-1])
@@ -117,7 +117,7 @@ def self.parse_version(content, data)
         content = content[end_index+2..-1]
     end
     
-    data.current_version = prev_version
+    data.context.version = prev_version
     content
 end
 
@@ -135,10 +135,10 @@ def self.parse_import(content, data)
         import_name = import_name + functions.split.join(' ')
     end
     
-    if (data.current_module.nil?)
+    if (data.context.module.nil?)
         puts "Current module not specified. Couldn't write import of #{import_name}"
     else
-        data.current_module.imports.push import_name
+        data.context.module.imports.push import_name
     end
     content[index+1..-1]
 end
@@ -153,11 +153,11 @@ def self.parse_module(content, data)
     module_index = data.modules.index {|x| x.name == module_name}
     
     unless (module_index.nil?)
-        data.current_module = data.modules[module_index]
+        data.context.module = data.modules[module_index]
     else
         new_module = SPModule.new(module_name)
         data.modules.push new_module
-        data.current_module = new_module
+        data.context.module = new_module
     end
 
     index = content.index(';')    
@@ -180,11 +180,11 @@ def self.parse_variable(content, data)
 
     qualifiers, type = move_immutable_keyword(qualifiers, type)
 
-    variable = SPVariable.new(name, type, qualifiers, data.current_version)
-    if (data.current_type.nil?)
-        data.current_module.variables.push variable
+    variable = SPVariable.new(name, type, qualifiers, data.context.version)
+    if (data.context.type.nil?)
+        data.context.module.variables.push variable
     else
-        data.current_type.variables.push variable
+        data.context.type.variables.push variable
     end
     
     index = content.index(';')
@@ -222,12 +222,12 @@ def self.parse_method(content, data)
 
     if (index)
         qualifiers, return_type = move_immutable_keyword(qualifiers, return_type)
-        method = SPMethod.new(method_name, return_type, qualifiers, args, data.current_version)
+        method = SPMethod.new(method_name, return_type, qualifiers, args, data.context.version)
         
-        if (data.current_type.nil?)
-            data.current_module.methods.push method
-        elsif (data.current_type.instance_of?(SPClass))
-            data.current_type.methods.push method
+        if (data.context.type.nil?)
+            data.context.module.methods.push method
+        elsif (data.context.type.instance_of?(SPClass))
+            data.context.type.methods.push method
         end
 
         if (last_symbol == '{')
@@ -261,9 +261,9 @@ def self.parse_union(content, data)
     qualifiers = $1
     name = $3
     
-    new_union = SPUnion.new(name, data.current_module, qualifiers, data.current_version)
-    prev_type = data.current_type
-    data.current_type = new_union
+    new_union = SPUnion.new(name, data.context.module, qualifiers, data.context.version)
+    prev_type = data.context.type
+    data.context.type = new_union
     
     # Get union content and then parse it.
     begin_index = content.index('{') + 1
@@ -285,8 +285,8 @@ def self.parse_union(content, data)
         end
     end
     
-    data.current_type = prev_type
-    data.current_module.types.push new_union
+    data.context.type = prev_type
+    data.context.module.types.push new_union
 
     content[end_index+2..-1]
 end
@@ -327,8 +327,8 @@ def self.parse_enum(content, data)
         end
     end
     
-    new_enum = SPEnum.new(name, data.current_module, values, base_type, qualifiers, data.current_version)
-    data.current_module.types.push new_enum
+    new_enum = SPEnum.new(name, data.context.module, values, base_type, qualifiers, data.context.version)
+    data.context.module.types.push new_enum
 
     content[end_index+2..-1]
 end
@@ -352,10 +352,10 @@ def self.parse_class(content, data)
         end
     end
 
-    new_class = SPClass.new(class_name, data.current_module, qualifiers, base_types, data.current_version)
-    prev_type = data.current_type
-    data.current_type = new_class
-    data.current_module.types.push new_class
+    new_class = SPClass.new(class_name, data.context.module, qualifiers, base_types, data.context.version)
+    prev_type = data.context.type
+    data.context.type = new_class
+    data.context.module.types.push new_class
     
     # Get class content and then parse it.
     begin_index = content.index('{') + 1
@@ -363,7 +363,7 @@ def self.parse_class(content, data)
     end_index += begin_index - 1
     
     parse(content[begin_index..end_index], data)
-    data.current_type = prev_type
+    data.context.type = prev_type
 
     content[end_index+2..-1]
 end
@@ -411,7 +411,7 @@ def self.parse_file(file_name, data)
     index = data.modules.index do |item|
         item.name == 'global'
     end
-    data.current_module = data.modules[index]
+    data.context.module = data.modules[index]
 end
 
 # Draws defined types.

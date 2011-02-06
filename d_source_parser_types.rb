@@ -100,14 +100,22 @@ class SPModule
     end
 end
 
+class Context
+    attr_accessor :module, :type, :version, :qualifiers
+    
+    def initialize(global_module)
+        @module = global_module
+    end
+end
+
 class TypesTree
-    attr_accessor :modules, :current_module, :current_type, :current_version
+    attr_accessor :modules, :context
     
     def initialize
         global_module = SPModule.new('global')
         global_module.types = []#DSourceParser::get_base_types(global_module)
         @modules = [global_module]
-        @current_module = global_module
+        @context = Context.new global_module
     end
     
     def get_all_types()
