@@ -9,6 +9,13 @@ module DSourceParser
 # TODO: Create map to replace "alised" types.
 # TODO: extern(C) int method(..)
 # TODO: Block: private {...}
+# TODO: Process parsed extern keyword content.
+# TODO: Parse qualifiers only in class content.
+
+# Concatenates 2 strings that maybe nil.
+def self.concat_strings(str1, str2)
+    (str1.nil? ? '' : str1) + (str2.nil? ? '' : str2)
+end
 
 # Gets index of close-char take in account nesting.
 # Example: { int foo(){return 1;} } <- index of this bracket will be returned.
@@ -85,6 +92,21 @@ def self.parse_alias(content, data)
     data.context.module.aliases.push SPVariable.new($2, $3, $1, data.context.version)
     index = content.index(';')
     content[index+1..-1]
+end
+
+# Parse qualifiers.
+def self.parse_qualifiers(content, data)
+    qualifiers = 'private|protected|public|package|static'
+    index = (content =~ /\A\s*(#{qualifiers})+\s*:/)
+    unless (index)
+        return content
+    end
+
+    qualifiers = $1
+    data.context.qualifiers = qualifiers
+
+    index = content.index(':')
+    return content[index+1..-1]
 end
 
 # Parses version keyword.
@@ -174,7 +196,7 @@ def self.parse_variable(content, data)
         return content
     end
 
-    qualifiers = $1
+    qualifiers = concat_strings($1, data.context.qualifiers)
     type = $4
     name = $7
 
@@ -203,7 +225,7 @@ def self.parse_method(content, data)
     # Try parse simple methods.
     index = (content =~ method_regexp)
     if (index)
-        qualifiers = $1
+        qualifiers = concat_strings($1, data.context.qualifiers)
         return_type = $4
         method_name = $7
         args = $8
@@ -258,7 +280,7 @@ def self.parse_union(content, data)
         return content
     end
     
-    qualifiers = $1
+    qualifiers = concat_strings($1, data.context.qualifiers)
     name = $3
     
     new_union = SPUnion.new(name, data.context.module, qualifiers, data.context.version)
@@ -300,7 +322,7 @@ def self.parse_enum(content, data)
         return content
     end
 
-    qualifiers = $1
+    qualifiers = concat_strings($1, data.context.qualifiers)
     name = $3
     base_type = $5
     
@@ -341,7 +363,7 @@ def self.parse_class(content, data)
     unless (index)
         return content
     end
-    qualifiers = $1
+    qualifiers = concat_strings($1, data.context.qualifiers)
     class_name = $4
     base_types = $6
 
@@ -354,8 +376,10 @@ def self.parse_class(content, data)
 
     new_class = SPClass.new(class_name, data.context.module, qualifiers, base_types, data.context.version)
     prev_type = data.context.type
+    prev_qualifiers = data.context.qualifiers
     data.context.type = new_class
     data.context.module.types.push new_class
+    data.context.qualifiers = ''
     
     # Get class content and then parse it.
     begin_index = content.index('{') + 1
@@ -364,6 +388,7 @@ def self.parse_class(content, data)
     
     parse(content[begin_index..end_index], data)
     data.context.type = prev_type
+    data.context.qualifiers = prev_qualifiers
 
     content[end_index+2..-1]
 end
@@ -374,7 +399,8 @@ def self.parse(content, data)
     # Maybe parsed as variable declaration.
     methods = [lambda { parse_comment(content, data) }, lambda { parse_version(content, data) },
         lambda { parse_extern(content, data) }, lambda { parse_alias(content, data) },
-        lambda { parse_module(content, data) }, lambda { parse_import(content, data) }, 
+        lambda { parse_module(content, data) }, lambda { parse_import(content, data) },
+        lambda { parse_qualifiers(content, data) },
         lambda { parse_class(content, data) }, 
         lambda { parse_enum(content, data) }, lambda { parse_union(content, data) },
         lambda { parse_method(content, data) }, lambda { parse_variable(content, data) }]

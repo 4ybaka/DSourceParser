@@ -105,6 +105,8 @@ class Context
     
     def initialize(global_module)
         @module = global_module
+        @qualifiers, @version = '', ''
+        @type = nil
     end
 end
 

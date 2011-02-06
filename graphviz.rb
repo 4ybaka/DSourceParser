@@ -154,17 +154,24 @@ module GraphvizUML
     end
 
 	def self.get_scope(scope)
-        if (scope.index 'private')
-            '- '
-        elsif (scope.index 'protected')
-            '# '
-        elsif (scope.index 'package')
-            '! '
-        elsif (scope.index 'public')
-            '+ '
-        else
-            #puts "Unrecognized object scope: #{scope}"
-            ''
-        end
+        result =
+            if (scope.index 'private')
+                '-'
+            elsif (scope.index 'protected')
+                '#'
+            elsif (scope.index 'package')
+                '&'
+            elsif (scope.index 'public')
+                '+'
+            else
+                ''
+            end
+        result +=
+            if (scope.index 'static')
+                '!'
+            else
+                ''
+            end
+        result + (result.length > 0 ? ' ' : '')
 	end
 end
