@@ -6,7 +6,7 @@ require File.expand_path('../d_source_parser_types', __FILE__)
 
 module DSourceParser
 
-# TODO: Create map to replace "alised" types.
+# TODO: Create map to replace "aliased" types.
 # TODO: extern(C) int method(..)
 # TODO: Process parsed extern keyword content.
 # TODO: Parse qualifiers only in class content.
@@ -532,7 +532,7 @@ def self.draw_relationship_tree(graph, data, draw_options)
     graph
 end
 
-def self.main(files, draw_options)
+def self.main(files, draw_options, print_file_name)
     start_dir = Dir.pwd
     image_file = File.join(start_dir, 'graph.png')
     graph_file = File.join(start_dir, 'graph.out')
@@ -568,6 +568,7 @@ def self.main(files, draw_options)
     data = TypesTree.new
 
     files.each do |file|
+        puts "Parsing #{file}..." if print_file_name
         parse_file(file, data)
     end
 
@@ -586,12 +587,16 @@ options = Hash[:d, '*']
 OptionParser.new do |opts|
     opts.banner = 'Usage: d_source_parser.rb -d[draw options] -f[files]'
     
-    opts.on('-d', '--draw [options]', 'Options: [c]omposition, [i]nheritance, [a]liases, [m]odule\'s data.') do |d|
+    opts.on('-d [options]', 'Draw options: [c]omposition, [i]nheritance, [a]liases, [m]odule\'s data.') do |d|
         options[:d] = d
     end
 
-    opts.on('-f', '--files file1,dir1', Array, 'Files to parse.') do |f|
+    opts.on('-f file1,dir1', Array, 'Files to parse.') do |f|
         options[:f] = f
+    end
+    
+    opts.on('-p', 'Print file names during it\'s content is parsing.') do |p|
+        options[:p] = p
     end
 end.parse!
 
@@ -600,6 +605,6 @@ unless (options[:f])
     exit
 end
 
-main(options[:f], options[:d])
+main(options[:f], options[:d], options[:p])
     
 end
