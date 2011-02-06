@@ -168,12 +168,9 @@ module GraphvizUML
             else
                 ''
             end
-        result +=
-            if (scope.index 'static')
-                '!'
-            else
-                ''
-            end
+        result += '!' if (scope.index 'static')
+        result += '=' if (scope.index 'synchronized')
+        
         result + (result.length > 0 ? ' ' : '')
 	end
 end

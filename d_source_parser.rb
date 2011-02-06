@@ -11,6 +11,8 @@ module DSourceParser
 # TODO: Process parsed extern keyword content.
 # TODO: Parse qualifiers only in class content.
 # TODO: alias maybe be declared inside class defenition.
+# TODO: Draw legend (-+=!# etc)
+# TODO: Cannot parse array declaration where in calculation of its length used brackets (int[(maxSize+1)/2] a;)
 
 # Concatenates 2 strings that maybe nil.
 def self.concat_strings(str1, str2)
@@ -205,7 +207,7 @@ end
 # Parses variable declaration.
 def self.parse_variable(content, data)
     qualifiers_for_regexp = get_qualifiers_regexp
-    regexp = /\A((#{qualifiers_for_regexp})*)\s*(?!import)(((immutable\s*\(\s*[^)\s]+\s*\)(\[|\])*)|[^(\s]+))\s+([^;\s()]+)(\s*=\s*[^;]*\s*)?;/
+    regexp = /\A((#{qualifiers_for_regexp})*)\s*(?!import)(((immutable\s*\(\s*[^)\s]+\s*\)(\[[^\]]*\])?)|[^(\s]+))\s+([^;\s()]+)(\s*=\s*[^;]*\s*)?;/
 
     index = (content =~ regexp)
     unless (index)

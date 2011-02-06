@@ -18,7 +18,7 @@ def self.remove_spaces(value)
 end
 
 def self.get_qualifiers()
-    ['const', 'immutable', 'shared', 'static', 'private',
+    ['const', 'immutable', 'shared', 'static', 'private', 'synchronized',
         'protected', 'package', 'public', 'export', 'pure', 'ref', 'final',
         'override', 'in', 'out', 'inout', 'lazy', 'abstract']
 end
