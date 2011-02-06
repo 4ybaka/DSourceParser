@@ -54,14 +54,14 @@ end
 def self.parse_comment(content, data)
     if (content =~ /\A\s*\/\*/)
         index = content.index('*/')
-        return content[index+2..-1]
+        return parse_comment(content[index+2..-1], data)
     end
     if (content =~ /\A\s*\/\//)
         index = content.index("\n")
         if (index.nil?)
             return ''
         else
-            return content[index+1..-1]
+            return parse_comment(content[index+1..-1], data)
         end
     end
     
@@ -207,7 +207,7 @@ end
 # Parses variable declaration.
 def self.parse_variable(content, data)
     qualifiers_for_regexp = get_qualifiers_regexp
-    regexp = /\A((#{qualifiers_for_regexp})*)\s*(?!import)(((immutable\s*\(\s*[^)\s]+\s*\)(\[[^\]]*\])?)|[^(\s]+))\s+([^;\s()]+)(\s*=\s*[^;]*\s*)?;/
+    regexp = /\A\s*((#{qualifiers_for_regexp})*)\s*(?!import)(((immutable\s*\(\s*[^)\s]+\s*\)(\[[^\]]*\])?)|[^(\s]+))\s+([^;\s()]+)(\s*=\s*[^;]*\s*)?;/
 
     index = (content =~ regexp)
     unless (index)
@@ -354,7 +354,7 @@ def self.parse_enum(content, data)
     while (enum_content != '')
         prev_content = enum_content
         enum_content = parse_comment(enum_content, data)
-        enum_content.strip!
+
         if (enum_content =~ /\A\s*([^,]+),?/)
             values.push $1.split.join(' ')
             index = enum_content.index(',')
