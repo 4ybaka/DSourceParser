@@ -14,7 +14,7 @@ module DSourceParser
 
 # Concatenates 2 strings that maybe nil.
 def self.concat_strings(str1, str2)
-    (str1.nil? ? '' : str1) + (str2.nil? ? '' : str2)
+    (str1.nil? ? '' : str1 + ' ') + (str2.nil? ? '' : str2)
 end
 
 # Gets index of close-char take in account nesting.
@@ -84,12 +84,13 @@ end
 
 # Parses alias and typedef keywords.
 def self.parse_alias(content, data)
-    index = (content =~ /\A\s*(alias|typedef)\s+([^\s]+)\s+([^\s;]+)\s*;/)
+    index = (content =~ /\A\s*(public|private)?\s*(alias|typedef)\s+([^\s]+)\s+([^\s;]+)\s*;/)
     unless index
         return content
     end
     
-    data.context.module.aliases.push SPVariable.new($2, $3, $1, data.context.version)
+    qualifiers = concat_strings(GraphvizUML::get_scope($1), $2)
+    data.context.module.aliases.push SPVariable.new($3, $4, qualifiers, data.context.version)
     index = content.index(';')
     content[index+1..-1]
 end
