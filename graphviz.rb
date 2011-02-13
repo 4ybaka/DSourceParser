@@ -3,34 +3,34 @@ module GraphvizUML
     # Gets base string for graph.
 	def self.init_graph
 		return "digraph G {
-		fontname = \"Bitstream Vera Sans\"
-		fontsize = 8
-
-		node [
-			fontname = \"Bitstream Vera Sans\"
-		    fontsize = 8
-		    shape = \"record\"
-		]
-
-		edge [
-		    fontname = \"Bitstream Vera Sans\"
-		    fontsize = 8
-		]"
+fontname = \"Bitstream Vera Sans\"
+fontsize = 8
+node [
+    fontname = \"Bitstream Vera Sans\"
+    fontsize = 8
+    shape = \"record\"
+]
+edge [
+    fontname = \"Bitstream Vera Sans\"
+    fontsize = 8
+]
+struct [shape=record, color=\"gray\", fontcolor=\"dimgray\", label=\"{ LEGEND | {- private\l}|{# protected\l}|{& package\l}|{+ public\l}|{! static\l}|{= synchronized\l}|{? version\l}}\"];
+\n"
 	end
 	
     # Adds all necessary data to close currently openned element.
 	def self.close_element(graph)
-		graph + "}\"]"
+		graph + "}\"]\n"
 	end
     
     # Adds all necessary data to close currently openned package.
 	def self.close_package(graph)
-		graph + '}'
+		graph + "}\n"
 	end
 
     # Adds package to the graph.
     def self.open_package(graph, package_name)
-        graph + " subgraph cluster_#{package_name.gsub(/\./, '_')} { label=\"#{package_name}\";"
+        graph + "\tsubgraph cluster_#{package_name.gsub(/\./, '_')} { label=\"#{package_name}\";"
     end
     
     # Adds element to the graph.

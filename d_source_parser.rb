@@ -11,7 +11,7 @@ module DSourceParser
 # TODO: Process parsed extern keyword content.
 # TODO: Parse qualifiers only in class content.
 # TODO: alias maybe be declared inside class defenition.
-# TODO: Draw legend (-+=!# etc)
+# TODO: Draw TODO list.
 # TODO: Cannot parse array declaration where in calculation of its length used brackets (int[(maxSize+1)/2] a;)
 
 # Concatenates 2 strings that maybe nil.
