@@ -92,10 +92,10 @@ class SPUnion < SPType
 end
 
 class SPModule
-    attr_accessor :name, :methods, :variables, :types, :imports, :aliases
+    attr_accessor :name, :methods, :variables, :types, :imports, :aliases, :todo
     
     def initialize(name)
-        @methods, @variables, @types, @imports, @aliases = [],[],[],[],[]
+        @methods, @variables, @types, @imports, @aliases, @todo = [],[],[],[],[],[]
         @name = DSourceParser::remove_spaces name
     end
 end

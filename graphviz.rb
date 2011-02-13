@@ -32,12 +32,16 @@ struct [shape=record, color=\"gray\", fontcolor=\"dimgray\", label=\"{ LEGEND | 
     def self.open_package(graph, package_name)
         graph + "\tsubgraph cluster_#{package_name.gsub(/\./, '_')} { label=\"#{package_name}\";"
     end
-    
-    # Adds element to the graph.
-	def self.open_element(graph, name, visible_name)
-		graph + "#{name.gsub(/\./, '_')} [ \nlabel = \"{#{visible_name}"
+
+    # Adds element to the graph with specified properties.
+	def self.open_element(graph, name, visible_name, properties = [])
+        data = ''
+        properties.each do |p|
+            data += "#{p[0]}=\"#{p[1]}\""
+        end
+		graph + "#{name.gsub(/\./, '_')} [ \n#{data}\nlabel = \"{#{visible_name}"
 	end
-    
+
     # Adds class to the graph.
     def self.add_class(graph, cl)
         base_types = get_base_types cl.base_types

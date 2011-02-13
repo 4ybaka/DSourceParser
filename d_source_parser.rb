@@ -11,7 +11,6 @@ module DSourceParser
 # TODO: Process parsed extern keyword content.
 # TODO: Parse qualifiers only in class content.
 # TODO: alias maybe be declared inside class defenition.
-# TODO: Draw TODO list.
 # TODO: Cannot parse array declaration where in calculation of its length used brackets (int[(maxSize+1)/2] a;)
 
 # Concatenates 2 strings that maybe nil.
@@ -52,8 +51,17 @@ end
 
 # Parses // and /* comments.
 def self.parse_comment(content, data)
+
+    # Parses TODO comments. Supported only one-line comments started with //.
+    def self.parse_todo(content, data)
+        if content =~ /(todo\s*:\s*([^\n]+))/i
+            data.context.module.todo.push $2
+        end
+    end
+
     if (content =~ /\A\s*\/\*/)
         index = content.index('*/')
+        parse_todo(content[0..index], data)
         return parse_comment(content[index+2..-1], data)
     end
     if (content =~ /\A\s*\/\//)
@@ -61,6 +69,7 @@ def self.parse_comment(content, data)
         if (index.nil?)
             return ''
         else
+            parse_todo(content[0..index], data)
             return parse_comment(content[index+1..-1], data)
         end
     end
@@ -462,7 +471,18 @@ end
 def self.draw_types(graph, data, draw_options)
     data.modules.each do |m|
         graph = GraphvizUML::open_package(graph, m.name)
+
+        # Draw todo list.
+        if (m.todo.length > 0 && (draw_options == '*' || draw_options.index('t')))
+            graph = GraphvizUML::open_element(graph, "todo__#{m.name}", "TODO__#{m.name}", [['color', 'dimgray'], ['fontcolor', 'dimgray']])
+            graph = GraphvizUML::add_separator(graph)
+            m.todo.each do |todo|
+                graph = GraphvizUML::add_string(graph, todo)
+            end
+            graph = GraphvizUML::close_element(graph)
+        end
         
+        # Draw alias.
         if (m.aliases.length > 0 && (draw_options == '*' || draw_options.index('a')))
             graph = GraphvizUML::open_element(graph, "alias__#{m.name}", "alias__#{m.name}")
             graph = GraphvizUML::add_separator(graph)
@@ -589,7 +609,7 @@ options = Hash[:d, '*']
 OptionParser.new do |opts|
     opts.banner = 'Usage: d_source_parser.rb -d[draw options] -f[files]'
     
-    opts.on('-d [options]', 'Draw options: [c]omposition, [i]nheritance, [a]liases, [m]odule\'s data.') do |d|
+    opts.on('-d [options]', 'Draw options: [c]omposition, [i]nheritance, [a]liases, [m]odule\'s data, [t]odo list.') do |d|
         options[:d] = d
     end
 
