@@ -14,7 +14,7 @@ edge [
     fontname = \"Bitstream Vera Sans\"
     fontsize = 8
 ]
-struct [shape=record, color=\"gray\", fontcolor=\"dimgray\", label=\"{ LEGEND | {- private\l}|{# protected\l}|{& package\l}|{+ public\l}|{! static\l}|{= synchronized\l}|{? version\l}}\"];
+struct [shape=record, color=\"gray\", fontcolor=\"dimgray\", label=\"{ LEGEND | {- private}|{# protected}|{~ package}|{+ public}|{! static}|{= synchronized}|{? version}}\"];
 \n"
 	end
 	
@@ -166,7 +166,7 @@ struct [shape=record, color=\"gray\", fontcolor=\"dimgray\", label=\"{ LEGEND | 
             elsif (scope.index 'protected')
                 '#'
             elsif (scope.index 'package')
-                '&'
+                '~'
             elsif (scope.index 'public')
                 '+'
             else
